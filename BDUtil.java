@@ -1,3 +1,5 @@
+package utilidades;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -17,12 +19,15 @@ import java.util.logging.Logger;
 
 public class BDUtil {
 
-    public static PreparedStatement setValues(Connection conn, String sql, Object bean) {
+    public static PreparedStatement setValues(Connection conn, String sql, Object bean, String... gets) {
         Method[] methods = bean.getClass().getDeclaredMethods();
         ArrayList<Method> al = new ArrayList();
-        for (int i = 0; i < methods.length; i++) {
-            if (methods[i].getName().toLowerCase().contains("get")) {
-                al.add(methods[i]);
+        for (Method method : methods) {
+            for (String item : gets) {
+                if (method.getName().equals(item)) {
+                    al.add(method);
+                    break;
+                }
             }
         }
         Object[] data = new Object[al.size()];
@@ -40,9 +45,6 @@ public class BDUtil {
         try {
             PreparedStatement ps = conn.prepareStatement(sql);
             for (int i = 0, i2 = 1; i < data.length; i++) {
-                if (data[i] == null) {
-                    continue;
-                }
                 String type = data[i].getClass().getName();
                 switch (type) {
                     case "java.lang.String":
@@ -110,16 +112,16 @@ public class BDUtil {
         }
         Object[][] vo = new Object[al[0].size()][cq];
         for (int i = 0; i < al[0].size(); i++) {
-            for (int j = 1; j < cq; j++) {
-                if (al[j].get(i) instanceof Date) {
+            for (int j = 0; j < cq; j++) {
+                if(al[j].get(i) instanceof Date){
                     vo[i][j] = ((Date) al[j].get(i)).toLocalDate();
                     continue;
                 }
-                if (al[j].get(i) instanceof Time) {
+                else if(al[j].get(i) instanceof Time){
                     vo[i][j] = ((Time) al[j].get(i)).toLocalTime();
                     continue;
                 }
-                if (al[j].get(i) instanceof Timestamp) {
+                else if(al[j].get(i) instanceof Timestamp){
                     vo[i][j] = ((Timestamp) al[j].get(i)).toLocalDateTime();
                     continue;
                 }
@@ -127,6 +129,40 @@ public class BDUtil {
             }
         }
         return vo;
+    }
+
+    public static Object[] getValues(ResultSet rs, Object bean, String... sets) throws SQLException {
+        Object[][] matriz = getValues(rs);
+        Method[] mtds = bean.getClass().getMethods();
+        ArrayList<Method> al = new ArrayList();
+        for (int i = 0; i < mtds.length; i++) {
+            for (int j = 0; j < sets.length; j++) {
+                if(mtds[i].getName().equals(sets[j])){
+                    al.add(mtds[i]);
+                    break;
+                }
+            }
+        }
+        Method[] setMtds = new Method[sets.length];
+        for (int i = 0; i < sets.length; i++) {
+            setMtds[i] = al.get(i);
+        }
+        Object[] beans = new Object[matriz.length];
+        for (int i = 0; i < matriz.length; i++) {
+            try {
+                Object obj = bean.getClass().newInstance();
+                for (int j = 0; j < sets.length; j++) {
+                    if(matriz[i][j] == null){
+                        continue;
+                    }
+                    setMtds[j].invoke(obj, new Object[] {matriz[i][j]});
+                }
+                beans[i] = obj;
+            } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+                Logger.getLogger(BDUtil.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+        return beans;
     }
 
 }
