@@ -17,9 +17,9 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class BDUtil {
+public class BDUtil<T> {
 
-    public static PreparedStatement setValues(Connection conn, String sql, Object bean, String... gets) {
+    public PreparedStatement setValues(Connection conn, String sql, Object bean, String... gets) {
         Method[] methods = bean.getClass().getDeclaredMethods();
         ArrayList<Method> al = new ArrayList();
         for (Method method : methods) {
@@ -41,7 +41,7 @@ public class BDUtil {
         return setValues(conn, sql, data);
     }
 
-    public static PreparedStatement setValues(Connection conn, String sql, Object[] data) {
+    public PreparedStatement setValues(Connection conn, String sql, Object[] data) {
         try {
             PreparedStatement ps = conn.prepareStatement(sql);
             for (int i = 0, i2 = 1; i < data.length; i++) {
@@ -96,7 +96,7 @@ public class BDUtil {
         }
     }
 
-    public static Object[][] getValues(ResultSet rs) throws SQLException {
+    public Object[][] getValues(ResultSet rs) throws SQLException {
         int cq = rs.getMetaData().getColumnCount();
         ArrayList[] al = new ArrayList[cq];
         while (rs.next()) {
@@ -131,7 +131,7 @@ public class BDUtil {
         return vo;
     }
 
-    public static Object[] getValues(ResultSet rs, Object bean, String... sets) throws SQLException {
+    public T[] getValues(ResultSet rs, Object bean, String... sets) throws SQLException {
         Object[][] matriz = getValues(rs);
         Method[] mtds = bean.getClass().getMethods();
         ArrayList<Method> al = new ArrayList();
@@ -147,7 +147,8 @@ public class BDUtil {
         for (int i = 0; i < sets.length; i++) {
             setMtds[i] = al.get(i);
         }
-        Object[] beans = new Object[matriz.length];
+        Class classe = bean.getClass();
+        T[] beans = new bean.getClass()[matriz.length];
         for (int i = 0; i < matriz.length; i++) {
             try {
                 Object obj = bean.getClass().newInstance();
@@ -155,7 +156,7 @@ public class BDUtil {
                     if(matriz[i][j] == null){
                         continue;
                     }
-                    setMtds[j].invoke(obj, new Object[] {matriz[i][j]});
+                    setMtds[j].invoke(obj, matriz[i][j]);
                 }
                 beans[i] = obj;
             } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
