@@ -17,15 +17,15 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class BDUtil<T> {
+public class BDUtil {
 
     public PreparedStatement setValues(Connection conn, String sql, Object bean, String... gets) {
         Method[] methods = bean.getClass().getDeclaredMethods();
         ArrayList<Method> al = new ArrayList();
-        for (Method method : methods) {
-            for (String item : gets) {
-                if (method.getName().equals(item)) {
-                    al.add(method);
+        for (int i = 0; i < gets.length; i++) {
+            for (int j = 0; j < methods.length; j++) {
+                if(gets[i].equals(methods[j].getName())){
+                    al.add(methods[j]);
                     break;
                 }
             }
@@ -131,15 +131,14 @@ public class BDUtil<T> {
         return vo;
     }
 
-    public T[] getValues(ResultSet rs, Object bean, String... sets) throws SQLException {
+    public void getValues(ResultSet rs, Object bean, Object[] beansArray, String... sets) throws SQLException {
         Object[][] matriz = getValues(rs);
         Method[] mtds = bean.getClass().getMethods();
         ArrayList<Method> al = new ArrayList();
-        for (int i = 0; i < mtds.length; i++) {
-            for (int j = 0; j < sets.length; j++) {
-                if(mtds[i].getName().equals(sets[j])){
-                    al.add(mtds[i]);
-                    break;
+        for (int i = 0; i < sets.length; i++) {
+            for (int j = 0; j < mtds.length; j++) {
+                if(sets[i].equals(mtds[j].getName())){
+                    al.add(mtds[j]);
                 }
             }
         }
@@ -147,8 +146,7 @@ public class BDUtil<T> {
         for (int i = 0; i < sets.length; i++) {
             setMtds[i] = al.get(i);
         }
-        Class classe = bean.getClass();
-        T[] beans = new bean.getClass()[matriz.length];
+        beansArray = new Object[matriz.length];
         for (int i = 0; i < matriz.length; i++) {
             try {
                 Object obj = bean.getClass().newInstance();
@@ -158,12 +156,18 @@ public class BDUtil<T> {
                     }
                     setMtds[j].invoke(obj, matriz[i][j]);
                 }
-                beans[i] = obj;
+                beansArray[i] = obj;
             } catch (InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
                 Logger.getLogger(BDUtil.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-        return beans;
     }
-
+    
+    public void backup(Connection connIn, Connection connOut, String table, LocalDateTime id, String ID) throws SQLException{
+        String sql = "SELECT * FROM " + table + " WHERE " + ID + " >= ?;";
+        PreparedStatement psIn = connIn.prepareStatement(sql);
+        psIn.setTimestamp(1, Timestamp.valueOf(id));
+        ResultSet rsIn = psIn.executeQuery();
+        
+    }
 }
