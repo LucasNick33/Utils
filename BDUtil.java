@@ -168,6 +168,6 @@ public class BDUtil {
         PreparedStatement psIn = connIn.prepareStatement(sql);
         psIn.setTimestamp(1, Timestamp.valueOf(id));
         ResultSet rsIn = psIn.executeQuery();
-        
+        //Em construção
     }
 }
